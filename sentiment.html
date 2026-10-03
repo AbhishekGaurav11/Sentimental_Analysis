@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NLP Sentiment Analyzer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #fdfbfb, #ebedee);
+      color: #333;
+      background-size: 400% 400%;
+      animation: gradientShift 20s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .container {
+      max-width: 950px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      animation: fadeInUp 1s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      text-align: center;
+      color: #007acc;
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    textarea, input[type="url"], input[type="file"] {
+      width: 100%;
+      padding: 1rem;
+      margin: 1rem 0;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    label {
+      font-weight: bold;
+      margin-top: 1rem;
+      display: block;
+    }
+
+    .section {
+      margin-bottom: 2rem;
+    }
+
+    .rating-options, .emojis {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .emoji-option, .star-option, .addon-option {
+      font-size: 2rem;
+      cursor: pointer;
+      border: 2px solid transparent;
+      padding: 0.5rem;
+      border-radius: 8px;
+      transition: 0.3s ease;
+    }
+
+    .emoji-option:hover, .emoji-option.selected,
+    .star-option:hover, .star-option.selected,
+    .addon-option:hover, .addon-option.selected {
+      border: 2px solid #007acc;
+      background: #e6f7ff;
+      transform: scale(1.2);
+    }
+
+    button {
+      background-color: #007acc;
+      color: white;
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 1rem;
+      transition: background 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #005c99;
+    }
+
+    video {
+      display: block;
+      margin: 1rem auto;
+      border-radius: 12px;
+      max-width: 100%;
+    }
+
+    .output {
+      margin-top: 2rem;
+      background: #f4f9ff;
+      padding: 1.5rem;
+      border-left: 5px solid #007acc;
+      border-radius: 8px;
+      animation: slideInResult 0.8s ease-out forwards;
+      opacity: 0;
+    }
+
+    .output.show {
+      opacity: 1;
+    }
+
+    @keyframes slideInResult {
+      0% {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧠 NLP Sentiment Analyzer</h1>
+    <form action="/analyze" method="POST" enctype="multipart/form-data">
+      <div class="section">
+        <label for="text">✍️ Enter your text:</label>
+        <textarea name="text" id="text" rows="4" placeholder="Write something..."></textarea>
+      </div>
+
+      <div class="section">
+        <label for="file">📄 Upload a file:</label>
+        <input type="file" name="file" id="file">
+      </div>
+
+      <div class="section">
+        <label for="url">📃 Analyze from a URL:</label>
+        <input type="url" name="url" id="url" placeholder="https://example.com">
+      </div>
+
+      <div class="section">
+        <label>⭐ Rate your mood with stars:</label>
+        <div class="rating-options" id="starSelector">
+          <div class="star-option">⭐</div>
+          <div class="star-option">⭐⭐</div>
+          <div class="star-option">⭐⭐⭐</div>
+          <div class="star-option">⭐⭐⭐⭐</div>
+          <div class="star-option">⭐⭐⭐⭐⭐</div>
+        </div>
+        <input type="hidden" name="stars" id="selectedStars" />
+      </div>
+
+      <div class="section">
+        <label>Select a mood emoji:</label>
+        <div class="emojis" id="emojiSelector">
+          <div class="emoji-option">😃</div>
+          <div class="emoji-option">😐</div>
+          <div class="emoji-option">😢</div>
+          <div class="emoji-option">😡</div>
+          <div class="emoji-option">😍</div>
+        </div>
+        <input type="hidden" name="emoji" id="selectedEmoji" />
+      </div>
+
+      <div class="section">
+        <label>✨ Enable Advanced Features:</label>
+        <div class="rating-options" id="addonSelector">
+          <div class="addon-option">📊</div>
+          <div class="addon-option">🌍</div>
+          <div class="addon-option">🌀</div>
+        </div>
+        <input type="hidden" name="addons" id="selectedAddons" />
+      </div>
+
+      <div class="section">
+        <button type="submit">🔍 Analyze</button>
+      </div>
+    </form>
+
+    {% if result %}
+    <div class="output animated-result" id="analysisResult">
+      <h3>🔍 Analysis Result</h3>
+      <p><strong>Sentiment:</strong> {{ result.sentiment }}</p>
+      <p><strong>Score:</strong> {{ result.score }}</p>
+      <p style="font-size: 2.5rem;">{{ result.emoji }}</p>
+    </div>
+    {% endif %}
+
+    <hr style="margin: 2rem 0;" />
+
+    <h2 style="text-align:center;">📷 Live Mood Detection (Camera)</h2>
+    <video id="video" autoplay playsinline></video>
+    <button onclick="capture()">🎥 Capture Mood</button>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <div class="output" id="moodResult"></div>
+
+    <hr style="margin: 2rem 0;" />
+    <h2 style="text-align:center;">📊 Sentiment Visual Chart</h2>
+    <canvas id="sentimentChart" width="400" height="200"></canvas>
+  </div>
+
+  <script>
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => document.getElementById('video').srcObject = stream)
+      .catch(err => console.error("Webcam access denied", err));
+
+    function capture() {
+      const video = document.getElementById('video');
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+      canvas.toBlob(blob => {
+        const formData = new FormData();
+        formData.append('image', blob, 'capture.jpg');
+        fetch('/detect_mood', {
+          method: 'POST',
+          body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+          const moodBox = document.getElementById("moodResult");
+          moodBox.classList.add("show");
+          moodBox.innerHTML = `
+            <h3>Detected Mood:</h3>
+            <p style="font-size: 2rem;">${data.emoji || "🙂"} ${data.mood}</p>
+          `;
+        });
+      });
+    }
+
+    document.querySelectorAll('.emoji-option').forEach(el => {
+      el.addEventListener('click', () => {
+        document.querySelectorAll('.emoji-option').forEach(e => e.classList.remove('selected'));
+        el.classList.add('selected');
+        document.getElementById('selectedEmoji').value = el.textContent;
+      });
+    });
+
+    document.querySelectorAll('.star-option').forEach(el => {
+      el.addEventListener('click', () => {
+        document.querySelectorAll('.star-option').forEach(e => e.classList.remove('selected'));
+        el.classList.add('selected');
+        document.getElementById('selectedStars').value = el.textContent.length;
+      });
+    });
+
+    document.querySelectorAll('.addon-option').forEach(el => {
+      el.addEventListener('click', () => {
+        el.classList.toggle('selected');
+        const selected = Array.from(document.querySelectorAll('.addon-option.selected')).map(e => e.textContent);
+        document.getElementById('selectedAddons').value = selected.join(',');
+      });
+    });
+
+    const ctx = document.getElementById('sentimentChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Positive', 'Negative', 'Neutral'],
+        datasets: [{
+          label: 'Sentiment Scores',
+          data: [3, 1, 2],
+          backgroundColor: ['#66cc66', '#ff6666', '#cccccc']
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: true },
+          title: { display: true, text: 'Sentiment Analysis Results' }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

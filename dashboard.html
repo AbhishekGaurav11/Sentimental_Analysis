@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome, {{ name }} 👋</h1>
+        <p>Ready to analyze your mood or sentiment?</p>
+        
+        <a class="btn" href="{{ url_for('sentiment') }}">Go to Sentiment Analyzer</a>
+        <br><br>
+        <a class="btn logout" href="{{ url_for('logout') }}">Logout</a>
+    </div>
+</body>
+</html>
